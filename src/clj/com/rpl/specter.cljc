@@ -388,6 +388,13 @@
        [apath transform-fn structure]
        `(i/compiled-transform* (path ~apath) ~transform-fn ~structure))
 
+     (defmacro transform-in
+       "Like `transform`, but follows the argument pattern of `clojure.core.update-in`."
+       [structure apath f & args]
+       `(i/compiled-transform*
+         ;; (path ~apath) ~(fn [x] (apply f x args)) ~structure))
+         (path ~apath) (fn ~'transform-fn [x#] (~f x# ~@args)) ~structure))
+
      (defmacro vtransform
        "Navigates to each value specified by the path and replaces it by the result of running
        the transform-fn on two arguments: the collected values as a vector, and the navigated value."
@@ -408,6 +415,11 @@
        "Navigates to each value specified by the path and replaces it by `aval`.
        This macro will do inline caching of the path."
        [apath aval structure]
+       `(i/compiled-setval* (path ~apath) ~aval ~structure))
+
+     (defmacro setval-in
+       "Like `setval`, but follows the argument pattern of `clojure.core.assoc-in`."
+       [structure apath aval]
        `(i/compiled-setval* (path ~apath) ~aval ~structure))
 
      (defmacro traverse
@@ -608,6 +620,12 @@
   [path transform-fn structure]
   (compiled-transform (i/comp-paths* path) transform-fn structure))
 
+(defn transform-in*
+  "Like `transform*`, but follows the argument pattern of `clojure.core.update-in`."
+  [structure path f & args]
+  (compiled-transform
+   (i/comp-paths* path) (fn transform-fn [x] (apply f x args)) structure))
+
 (def ^{:doc "Version of `multi-transform` that takes in a path precompiled with `comp-paths`"}
   compiled-multi-transform i/compiled-multi-transform*)
 
@@ -627,6 +645,11 @@
 (defn setval*
   "Navigates to each value specified by the path and replaces it by val"
   [path val structure]
+  (compiled-setval (i/comp-paths* path) val structure))
+
+(defn setval-in
+  "Like `setval*`, but follows the argument pattern of `clojure.core.assoc-in`."
+  [structure path val]
   (compiled-setval (i/comp-paths* path) val structure))
 
 (def ^{:doc "Version of replace-in that takes in a path precompiled with comp-paths"}
